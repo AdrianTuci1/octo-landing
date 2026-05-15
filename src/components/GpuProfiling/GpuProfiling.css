@@ -1,0 +1,151 @@
+.gpu-section {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.gpu-container {
+  width: 100%;
+  max-width: var(--container-width);
+  margin: 0 auto;
+  padding: 8rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+}
+
+
+
+.gpu-top-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.1rem;
+  margin-bottom: 2rem;
+}
+
+.gpu-content-top {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--gap-lg);
+  margin-bottom: 4rem;
+}
+
+.gpu-title {
+  font-size: var(--fs-title-lg);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -1px;
+  max-width: 600px;
+  color: var(--text-primary);
+  text-align: left; /* Left aligned on padding line */
+}
+
+.gpu-description-box {
+  max-width: 450px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.gpu-text {
+  font-size: var(--fs-body);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.gpu-logos {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-md);
+  margin-top: 1rem;
+}
+
+.gpu-logo-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  opacity: 0.8;
+}
+
+.gpu-dashboard-placeholder {
+  width: 100%;
+  height: 500px;
+  background-color: #111216;
+  border: 1px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-nav {
+  height: 40px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  gap: 1.5rem;
+  background-color: #1a1b20;
+}
+
+.dash-nav-item {
+  font-size: var(--fs-small);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.dash-nav-item.active {
+  color: var(--text-primary);
+  position: relative;
+}
+
+.dash-nav-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: -13px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--accent-purple);
+}
+
+.dashboard-main {
+  flex: 1;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md);
+}
+
+.chart-placeholder {
+  width: 100%;
+  height: 150px;
+  border-bottom: 1px solid var(--border-color);
+  position: relative;
+}
+
+.chart-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 60%;
+  background: linear-gradient(0deg, rgba(139, 92, 246, 0.1) 0%, transparent 100%);
+  border-top: 1px solid var(--accent-purple);
+}
+
+@media (max-width: 1024px) {
+  .gpu-content-top {
+    flex-direction: column;
+    gap: 2rem;
+  }
+}

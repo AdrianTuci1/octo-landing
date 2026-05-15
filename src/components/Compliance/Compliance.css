@@ -1,0 +1,107 @@
+.compliance-section {
+  min-height: 100vh;
+  padding: 8rem 4rem;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.compliance-container {
+  max-width: var(--container-width);
+  margin: 0 auto;
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2rem;
+  /* Smaller gap between label and content */
+  padding-bottom: 5vh;
+  /* Space at the very bottom */
+}
+
+.compliance-label-row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.compliance-main-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 4rem;
+  align-items: end;
+  /* Content sits on the bottom row */
+  text-align: left;
+}
+
+.title-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.compliance-title {
+  font-size: var(--fs-title-lg);
+  font-weight: 500;
+  line-height: 1;
+  color: var(--text-primary);
+}
+
+.partners-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.partner-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 1rem;
+}
+
+.partner-name {
+  font-size: 1.2rem;
+  color: var(--text-primary);
+}
+
+.partner-logo {
+  height: 24px;
+  width: auto;
+}
+
+.logo-openai {
+  height: 28px;
+}
+
+.desc-col {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.desc-wrapper {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.vertical-line {
+  width: 1px;
+  height: 100px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.compliance-desc-text {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+@media (max-width: 1024px) {
+  .compliance-main-row {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+    align-items: flex-start;
+  }
+}
