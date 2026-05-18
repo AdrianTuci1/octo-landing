@@ -7,6 +7,8 @@ const HeroVisual = ({ phase = 'hud' }) => {
   const startRef = useRef(0);
   const bufferRef = useRef(null);
   const frameRef = useRef(null);
+  const sizeRef = useRef({ width: 0, height: 0 });
+  const visibleRef = useRef(true);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -18,44 +20,68 @@ const HeroVisual = ({ phase = 'hud' }) => {
       ctx: null,
       image: null,
       lastCloudTime: -Infinity,
+      atmosphereCanvas: document.createElement('canvas'),
+      atmosphereCtx: null,
+      sceneCanvas: document.createElement('canvas'),
+      sceneCtx: null,
+      lastSceneTime: -Infinity,
     };
     bufferRef.current.ctx = bufferRef.current.canvas.getContext('2d');
+    bufferRef.current.atmosphereCtx = bufferRef.current.atmosphereCanvas.getContext('2d');
+    bufferRef.current.sceneCtx = bufferRef.current.sceneCanvas.getContext('2d', { alpha: false });
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
       const dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+      sizeRef.current = { width: rect.width, height: rect.height };
       canvas.width = Math.max(1, Math.floor(rect.width * dpr));
       canvas.height = Math.max(1, Math.floor(rect.height * dpr));
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
+    const scheduleFrame = () => {
+      if (!reducedMotion && visibleRef.current) {
+        frameRef.current = window.requestAnimationFrame(render);
+      }
+    };
+
     const render = (now) => {
+      if (!visibleRef.current) return;
       if (!startRef.current) startRef.current = now;
 
-      const rect = canvas.getBoundingClientRect();
       const elapsed = (now - startRef.current) / 1000;
+      const { width, height } = sizeRef.current;
 
       drawHeroVisualFrame({
         ctx,
         buffer: bufferRef.current,
-        width: rect.width,
-        height: rect.height,
+        width,
+        height,
         elapsed,
         phase,
         reducedMotion,
       });
 
-      if (!reducedMotion) {
-        frameRef.current = window.requestAnimationFrame(render);
-      }
+      scheduleFrame();
     };
 
+    const observer = new IntersectionObserver(([entry]) => {
+      const wasVisible = visibleRef.current;
+      visibleRef.current = entry.isIntersecting;
+
+      if (!wasVisible && visibleRef.current) {
+        frameRef.current = window.requestAnimationFrame(render);
+      }
+    });
+
     resize();
+    observer.observe(canvas);
     render(performance.now());
     window.addEventListener('resize', resize);
 
     return () => {
       window.removeEventListener('resize', resize);
+      observer.disconnect();
       window.cancelAnimationFrame(frameRef.current);
     };
   }, [phase]);

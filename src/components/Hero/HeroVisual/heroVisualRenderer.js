@@ -74,6 +74,8 @@ const matterBlobs = [
 
 const CLOUD_FRAME_INTERVAL = 1 / 12;
 const CLOUD_RESOLUTION_DIVISOR = 6;
+const SCENE_FRAME_INTERVAL = 1 / 12;
+const INSTALL_COMMAND = 'brew install --cask octomus';
 let frostedNoisePattern = null;
 
 const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
@@ -365,6 +367,47 @@ const drawAtmosphereOverlay = (ctx, width, height) => {
   ctx.restore();
 };
 
+const drawCachedAtmosphereOverlay = (ctx, buffer, width, height) => {
+  const canvas = buffer.atmosphereCanvas;
+
+  if (canvas.width !== Math.round(width) || canvas.height !== Math.round(height)) {
+    canvas.width = Math.max(1, Math.round(width));
+    canvas.height = Math.max(1, Math.round(height));
+    drawAtmosphereOverlay(buffer.atmosphereCtx, canvas.width, canvas.height);
+  }
+
+  ctx.drawImage(canvas, 0, 0, width, height);
+};
+
+const drawBackgroundScene = (ctx, buffer, width, height, time, reducedMotion) => {
+  const canvasWidth = Math.max(1, Math.round(width));
+  const canvasHeight = Math.max(1, Math.round(height));
+  const sceneCanvas = buffer.sceneCanvas;
+  const shouldRender =
+    sceneCanvas.width !== canvasWidth ||
+    sceneCanvas.height !== canvasHeight ||
+    time - buffer.lastSceneTime >= SCENE_FRAME_INTERVAL;
+
+  if (sceneCanvas.width !== canvasWidth || sceneCanvas.height !== canvasHeight) {
+    sceneCanvas.width = canvasWidth;
+    sceneCanvas.height = canvasHeight;
+    buffer.lastSceneTime = -Infinity;
+  }
+
+  if (shouldRender) {
+    const sceneCtx = buffer.sceneCtx;
+    sceneCtx.clearRect(0, 0, width, height);
+    drawClouds(sceneCtx, buffer, width, height, time, reducedMotion);
+    drawGlow(sceneCtx, width, height, time);
+    drawInterestAccents(sceneCtx, width, height, time);
+    drawFrostedGlassLayer(sceneCtx, width, height, time);
+    drawCachedAtmosphereOverlay(sceneCtx, buffer, width, height);
+    buffer.lastSceneTime = time;
+  }
+
+  ctx.drawImage(sceneCanvas, 0, 0, width, height);
+};
+
 const drawLabel = (ctx, text, x, y, scale, alpha) => {
   const paddingX = 8 * scale;
   const height = 22 * scale;
@@ -382,7 +425,57 @@ const drawLabel = (ctx, text, x, y, scale, alpha) => {
   ctx.restore();
 };
 
+const drawInstallCommand = (ctx, width, height, elapsed, time) => {
+  const appear = smoothstep(4.75, 5.45, elapsed);
+  const exit = smoothstep(7.45, 8.05, elapsed);
+  const alpha = appear * (1 - exit);
+
+  if (alpha <= 0) return;
+
+  const typeProgress = smoothstep(5.35, 7.0, elapsed);
+  const visibleChars = Math.floor(INSTALL_COMMAND.length * typeProgress);
+  const visibleText = INSTALL_COMMAND.slice(0, visibleChars);
+  const showCursor = elapsed < 7.35 && Math.floor(elapsed * 5) % 2 === 0;
+  const scaleIn = lerp(0.18, 1, appear);
+  const scale = lerp(scaleIn, 0.9, exit);
+  const fontSize = Math.max(13, Math.min(18, width * 0.014));
+  const boxWidth = Math.min(width * 0.5, 410);
+  const boxHeight = fontSize * 2.7;
+  const x = width * 0.5 - (boxWidth * scale) / 2;
+  const y = height * 0.49 - (boxHeight * scale) / 2;
+  const w = boxWidth * scale;
+  const h = boxHeight * scale;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.82)';
+  ctx.lineWidth = Math.max(1.2, width / 1100);
+  ctx.strokeRect(x, y, w, h);
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalAlpha = alpha * smoothstep(5.05, 5.45, elapsed);
+  ctx.font = `${fontSize * scale}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(12, 14, 20, 0.92)';
+  const textX = x + 18 * scale;
+  const textY = y + h / 2 + Math.sin(time * 2.1) * 0.4;
+  ctx.fillText(visibleText, textX, textY);
+
+  if (showCursor) {
+    const cursorX = textX + ctx.measureText(visibleText).width + 2 * scale;
+    const cursorSize = fontSize * scale;
+    ctx.fillRect(cursorX, textY - cursorSize / 2, cursorSize * 0.62, cursorSize);
+  }
+
+  ctx.restore();
+};
+
 const drawFrame = (ctx, frame, width, height, reveal, drift, label, labelOffset, time) => {
+  if (reveal <= 0) return;
+
   const x = (frame.x + drift.x) * width;
   const y = (frame.y + drift.y) * height;
   const w = frame.w * width;
@@ -428,7 +521,7 @@ const drawFrame = (ctx, frame, width, height, reveal, drift, label, labelOffset,
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.78)';
   ctx.lineWidth = Math.max(1.2, width / 1000);
   ctx.shadowColor = 'rgba(255, 255, 255, 0.48)';
-  ctx.shadowBlur = 9;
+  ctx.shadowBlur = 5;
 
   const drawCorner = (sx, sy, mx, my) => {
     ctx.beginPath();
@@ -465,7 +558,7 @@ const drawNode = (ctx, point, radius, reveal, filled = false) => {
   ctx.save();
   ctx.globalAlpha = smoothstep(0, 1, reveal);
   ctx.shadowColor = 'rgba(255, 255, 255, 0.75)';
-  ctx.shadowBlur = 12;
+  ctx.shadowBlur = filled ? 8 : 6;
 
   ctx.beginPath();
   ctx.arc(point.x, point.y, radius + 4, 0, Math.PI * 2);
@@ -492,6 +585,8 @@ const drawNode = (ctx, point, radius, reveal, filled = false) => {
 };
 
 const drawStraightLink = (ctx, start, end, progress) => {
+  if (progress <= 0) return;
+
   ctx.beginPath();
   ctx.moveTo(start.x, start.y);
   ctx.lineTo(lerp(start.x, end.x, progress), lerp(start.y, end.y, progress));
@@ -500,7 +595,13 @@ const drawStraightLink = (ctx, start, end, progress) => {
 
 const getNodeOrder = (cluster, nodeIndex) => {
   if (nodeIndex === cluster.pivot) return 0;
-  return 1 + cluster.nodes.filter((node, index) => index !== cluster.pivot && index < nodeIndex).length;
+
+  let order = 1;
+  for (let index = 0; index < nodeIndex; index += 1) {
+    if (index !== cluster.pivot) order += 1;
+  }
+
+  return order;
 };
 
 const getNodeReveal = (cluster, clusterIndex, nodeIndex, elapsed) => {
@@ -511,7 +612,7 @@ const getNodeReveal = (cluster, clusterIndex, nodeIndex, elapsed) => {
 
 const getLocalLineReveal = (cluster, clusterIndex, nodeIndex, elapsed) => {
   const order = getNodeOrder(cluster, nodeIndex);
-  const delay = 3.25 + clusterIndex * 0.36 + order * 0.18;
+  const delay = 8.1 + clusterIndex * 0.36 + order * 0.18;
   return smoothstep(delay, delay + 0.58, elapsed);
 };
 
@@ -539,14 +640,15 @@ const drawHud = (ctx, width, height, time, elapsed) => {
   ctx.lineDashOffset = -time * 9;
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.58)';
   ctx.lineWidth = Math.max(1.1, width / 1320);
-  ctx.shadowColor = 'rgba(255, 255, 255, 0.35)';
-  ctx.shadowBlur = 4;
+  ctx.shadowBlur = 0;
 
   clusters.forEach((cluster, clusterIndex) => {
     const pivot = pointsByCluster[clusterIndex][cluster.pivot];
     cluster.nodes.forEach((node, nodeIndex) => {
       if (nodeIndex === cluster.pivot) return;
       const localProgress = getLocalLineReveal(cluster, clusterIndex, nodeIndex, elapsed);
+      if (localProgress <= 0) return;
+
       const target = pointsByCluster[clusterIndex][nodeIndex];
       ctx.globalAlpha = localProgress * 0.86;
       drawStraightLink(ctx, pivot, target, localProgress);
@@ -556,8 +658,9 @@ const drawHud = (ctx, width, height, time, elapsed) => {
   longLinks.forEach((link, linkIndex) => {
     const start = pointsByCluster[link.from[0]][link.from[1]];
     const end = pointsByCluster[link.to[0]][link.to[1]];
-    const delay = 4.55 + linkIndex * 0.22 + link.delay;
+    const delay = 9.15 + linkIndex * 0.22 + link.delay;
     const progress = smoothstep(delay, delay + 0.82, elapsed);
+    if (progress <= 0) return;
 
     ctx.globalAlpha = progress * 0.62;
     drawStraightLink(ctx, start, end, progress);
@@ -567,7 +670,7 @@ const drawHud = (ctx, width, height, time, elapsed) => {
 
   clusters.forEach((cluster) => {
     const drift = getFrameDrift(cluster, time);
-    const frameReveal = smoothstep(6.55, 7.85, elapsed);
+    const frameReveal = smoothstep(11.7, 13.0, elapsed);
     drawFrame(ctx, cluster.frame, width, height, frameReveal, drift, cluster.label, cluster.labelOffset, time);
   });
 
@@ -579,24 +682,26 @@ const drawHud = (ctx, width, height, time, elapsed) => {
   });
 
   strayNodes.forEach((node, index) => {
+    const reveal = smoothstep(2.4 + index * 0.48, 3.35 + index * 0.48, elapsed) * 0.65;
+    if (reveal <= 0) return;
+
     const p = {
       x: (node.x + Math.sin(time * 0.18 + node.seed) * 0.005) * width,
       y: (node.y + Math.cos(time * 0.16 + node.seed) * 0.006) * height,
     };
-    drawNode(ctx, p, node.r * Math.min(width / 1280, 1), smoothstep(2.4 + index * 0.48, 3.35 + index * 0.48, elapsed) * 0.65);
+    drawNode(ctx, p, node.r * Math.min(width / 1280, 1), reveal);
   });
+
+  drawInstallCommand(ctx, width, height, elapsed, time);
 };
 
 export const drawHeroVisualFrame = ({ ctx, buffer, width, height, elapsed, phase, reducedMotion }) => {
   const time = reducedMotion ? 0.6 : elapsed;
-  ctx.clearRect(0, 0, width, height);
-  drawClouds(ctx, buffer, width, height, time, reducedMotion);
-  drawGlow(ctx, width, height, time);
-  drawInterestAccents(ctx, width, height, time);
-  drawFrostedGlassLayer(ctx, width, height, time);
-  drawAtmosphereOverlay(ctx, width, height);
 
-  if (phase === 'clouds') return;
+  ctx.clearRect(0, 0, width, height);
+  drawBackgroundScene(ctx, buffer, width, height, time, reducedMotion);
+
+  if (phase === 'clouds' || elapsed < 1.05) return;
 
   drawHud(ctx, width, height, time, elapsed);
 };
