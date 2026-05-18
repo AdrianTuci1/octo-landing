@@ -1,6 +1,15 @@
-import { useEffect, useRef } from 'react';
-import { drawHeroVisualFrame } from './heroVisualRenderer';
+import { useEffect, useRef, useState } from 'react';
+import { HERO_VISUAL_LOOP_DURATION, drawHeroVisualFrame } from './heroVisualRenderer';
+import { AgentsView } from './agents/AgentsView';
 import './HeroVisual.css';
+
+const getAgentsStage = (elapsed) => {
+  if (elapsed >= 14.4 && elapsed < 18.1) {
+    return elapsed >= 16.2 ? 'selecting' : 'visible';
+  }
+
+  return 'hidden';
+};
 
 const HeroVisual = ({ phase = 'hud' }) => {
   const canvasRef = useRef(null);
@@ -9,6 +18,8 @@ const HeroVisual = ({ phase = 'hud' }) => {
   const frameRef = useRef(null);
   const sizeRef = useRef({ width: 0, height: 0 });
   const visibleRef = useRef(true);
+  const agentsStageRef = useRef('hidden');
+  const [agentsStage, setAgentsStage] = useState('hidden');
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -24,11 +35,14 @@ const HeroVisual = ({ phase = 'hud' }) => {
       atmosphereCtx: null,
       sceneCanvas: document.createElement('canvas'),
       sceneCtx: null,
+      cleanSceneCanvas: document.createElement('canvas'),
+      cleanSceneCtx: null,
       lastSceneTime: -Infinity,
     };
     bufferRef.current.ctx = bufferRef.current.canvas.getContext('2d');
     bufferRef.current.atmosphereCtx = bufferRef.current.atmosphereCanvas.getContext('2d');
     bufferRef.current.sceneCtx = bufferRef.current.sceneCanvas.getContext('2d', { alpha: false });
+    bufferRef.current.cleanSceneCtx = bufferRef.current.cleanSceneCanvas.getContext('2d', { alpha: false });
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
@@ -49,8 +63,16 @@ const HeroVisual = ({ phase = 'hud' }) => {
       if (!visibleRef.current) return;
       if (!startRef.current) startRef.current = now;
 
-      const elapsed = (now - startRef.current) / 1000;
+      const absoluteElapsed = (now - startRef.current) / 1000;
+      const elapsed = absoluteElapsed % HERO_VISUAL_LOOP_DURATION;
+      const isInitialCycle = absoluteElapsed < HERO_VISUAL_LOOP_DURATION;
       const { width, height } = sizeRef.current;
+      const nextAgentsStage = getAgentsStage(elapsed);
+
+      if (nextAgentsStage !== agentsStageRef.current) {
+        agentsStageRef.current = nextAgentsStage;
+        setAgentsStage(nextAgentsStage);
+      }
 
       drawHeroVisualFrame({
         ctx,
@@ -58,6 +80,8 @@ const HeroVisual = ({ phase = 'hud' }) => {
         width,
         height,
         elapsed,
+        backgroundElapsed: absoluteElapsed,
+        isInitialCycle,
         phase,
         reducedMotion,
       });
@@ -89,6 +113,9 @@ const HeroVisual = ({ phase = 'hud' }) => {
   return (
     <div className="hero-visual" aria-label="Animated coding network visualization">
       <canvas ref={canvasRef} className="hero-visual__canvas" />
+      <div className={`hero-visual__agents-layer hero-visual__agents-layer--${agentsStage}`}>
+        <AgentsView selectedRunId={agentsStage === 'selecting' ? '1' : undefined} />
+      </div>
     </div>
   );
 };

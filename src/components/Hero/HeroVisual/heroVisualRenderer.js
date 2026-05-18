@@ -10,7 +10,7 @@ const palette = {
 
 const clusters = [
   {
-    label: "(*Group) .Go.func1",
+    label: "(*Agent) Input processing",
     labelOffset: [-2, -26],
     frame: { x: 0.055, y: 0.29, w: 0.185, h: 0.47 },
     pivot: 1,
@@ -23,7 +23,7 @@ const clusters = [
     ],
   },
   {
-    label: "(*Group) .Go.func1",
+    label: "(*Agent) Data ingestion",
     labelOffset: [0, -22],
     frame: { x: 0.295, y: 0.735, w: 0.112, h: 0.31 },
     pivot: 1,
@@ -33,7 +33,7 @@ const clusters = [
     ],
   },
   {
-    label: 'golang.org/x/sync/errgrou',
+    label: "(*Agent) Plan generation",
     labelOffset: [0, -24],
     frame: { x: 0.75, y: 0.055, w: 0.205, h: 0.53 },
     pivot: 2,
@@ -76,6 +76,18 @@ const CLOUD_FRAME_INTERVAL = 1 / 12;
 const CLOUD_RESOLUTION_DIVISOR = 6;
 const SCENE_FRAME_INTERVAL = 1 / 12;
 const INSTALL_COMMAND = 'brew install --cask octomus';
+const AGENTS_START = 14.4;
+const CLOUD_ONLY_START = 18.1;
+const COMPOSER_BOX_START = 18.45;
+const COMPOSER_BOX_END = 20.7;
+const ZOOM_IN_START = 21.0;
+const RUNNING_TEXT_START = 22.05;
+const RUNNING_TEXT_END = 24.0;
+const FINISHED_TEXT_START = 24.25;
+const FINISHED_TEXT_END = 27.15;
+const ZOOM_OUT_START = 27.0;
+const ZOOM_OUT_END = 29.25;
+export const HERO_VISUAL_LOOP_DURATION = 30.4;
 let frostedNoisePattern = null;
 
 const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
@@ -173,6 +185,7 @@ const drawClouds = (ctx, buffer, width, height, time, reducedMotion) => {
     buffer.canvas.width !== lowWidth ||
     buffer.canvas.height !== lowHeight ||
     !buffer.image ||
+    motion < buffer.lastCloudTime ||
     motion - buffer.lastCloudTime >= CLOUD_FRAME_INTERVAL;
 
   if (buffer.canvas.width !== lowWidth || buffer.canvas.height !== lowHeight) {
@@ -379,33 +392,69 @@ const drawCachedAtmosphereOverlay = (ctx, buffer, width, height) => {
   ctx.drawImage(canvas, 0, 0, width, height);
 };
 
-const drawBackgroundScene = (ctx, buffer, width, height, time, reducedMotion) => {
+const renderBackgroundSceneCache = (buffer, width, height, time, reducedMotion) => {
   const canvasWidth = Math.max(1, Math.round(width));
   const canvasHeight = Math.max(1, Math.round(height));
   const sceneCanvas = buffer.sceneCanvas;
+  const cleanSceneCanvas = buffer.cleanSceneCanvas;
   const shouldRender =
     sceneCanvas.width !== canvasWidth ||
     sceneCanvas.height !== canvasHeight ||
+    time < buffer.lastSceneTime ||
     time - buffer.lastSceneTime >= SCENE_FRAME_INTERVAL;
 
   if (sceneCanvas.width !== canvasWidth || sceneCanvas.height !== canvasHeight) {
     sceneCanvas.width = canvasWidth;
     sceneCanvas.height = canvasHeight;
+    cleanSceneCanvas.width = canvasWidth;
+    cleanSceneCanvas.height = canvasHeight;
     buffer.lastSceneTime = -Infinity;
   }
 
   if (shouldRender) {
     const sceneCtx = buffer.sceneCtx;
+    const cleanSceneCtx = buffer.cleanSceneCtx;
+
+    cleanSceneCtx.clearRect(0, 0, width, height);
+    drawClouds(cleanSceneCtx, buffer, width, height, time, reducedMotion);
+    drawGlow(cleanSceneCtx, width, height, time);
+    drawInterestAccents(cleanSceneCtx, width, height, time);
+    drawCachedAtmosphereOverlay(cleanSceneCtx, buffer, width, height);
+
     sceneCtx.clearRect(0, 0, width, height);
-    drawClouds(sceneCtx, buffer, width, height, time, reducedMotion);
-    drawGlow(sceneCtx, width, height, time);
-    drawInterestAccents(sceneCtx, width, height, time);
+    sceneCtx.drawImage(cleanSceneCanvas, 0, 0, width, height);
     drawFrostedGlassLayer(sceneCtx, width, height, time);
-    drawCachedAtmosphereOverlay(sceneCtx, buffer, width, height);
     buffer.lastSceneTime = time;
   }
+};
 
-  ctx.drawImage(sceneCanvas, 0, 0, width, height);
+const drawBackgroundSceneView = (ctx, buffer, width, height, time, reducedMotion, zoom) => {
+  renderBackgroundSceneCache(buffer, width, height, time, reducedMotion);
+
+  const sceneCanvas = zoom > 1.001 ? buffer.cleanSceneCanvas : buffer.sceneCanvas;
+  if (zoom <= 1.001) {
+    ctx.drawImage(sceneCanvas, 0, 0, width, height);
+    return;
+  }
+
+  const focusX = width * 0.68;
+  const focusY = height * 0.68;
+  const sourceWidth = width / zoom;
+  const sourceHeight = height / zoom;
+  const sourceX = clamp(focusX - sourceWidth / 2, 0, width - sourceWidth);
+  const sourceY = clamp(focusY - sourceHeight / 2, 0, height - sourceHeight);
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(sceneCanvas, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, width, height);
+  ctx.restore();
+  drawFrostedGlassLayer(ctx, width, height, time);
+};
+
+const getZoomScale = (elapsed) => {
+  if (elapsed < ZOOM_IN_START) return 1;
+
+  const zoomOut = smoothstep(ZOOM_OUT_START, ZOOM_OUT_END, elapsed);
+  return lerp(4.8, 1, zoomOut);
 };
 
 const drawLabel = (ctx, text, x, y, scale, alpha) => {
@@ -426,16 +475,16 @@ const drawLabel = (ctx, text, x, y, scale, alpha) => {
 };
 
 const drawInstallCommand = (ctx, width, height, elapsed, time) => {
-  const appear = smoothstep(4.75, 5.45, elapsed);
-  const exit = smoothstep(7.45, 8.05, elapsed);
+  const appear = smoothstep(2.15, 2.75, elapsed);
+  const exit = smoothstep(5.05, 5.55, elapsed);
   const alpha = appear * (1 - exit);
 
   if (alpha <= 0) return;
 
-  const typeProgress = smoothstep(5.35, 7.0, elapsed);
+  const typeProgress = smoothstep(2.85, 4.35, elapsed);
   const visibleChars = Math.floor(INSTALL_COMMAND.length * typeProgress);
   const visibleText = INSTALL_COMMAND.slice(0, visibleChars);
-  const showCursor = elapsed < 7.35 && Math.floor(elapsed * 5) % 2 === 0;
+  const showCursor = elapsed < 4.8 && Math.floor(elapsed * 5) % 2 === 0;
   const scaleIn = lerp(0.18, 1, appear);
   const scale = lerp(scaleIn, 0.9, exit);
   const fontSize = Math.max(13, Math.min(18, width * 0.014));
@@ -456,7 +505,7 @@ const drawInstallCommand = (ctx, width, height, elapsed, time) => {
   ctx.restore();
 
   ctx.save();
-  ctx.globalAlpha = alpha * smoothstep(5.05, 5.45, elapsed);
+  ctx.globalAlpha = alpha * smoothstep(2.45, 2.85, elapsed);
   ctx.font = `${fontSize * scale}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
   ctx.textBaseline = 'middle';
   ctx.fillStyle = 'rgba(12, 14, 20, 0.92)';
@@ -473,7 +522,126 @@ const drawInstallCommand = (ctx, width, height, elapsed, time) => {
   ctx.restore();
 };
 
-const drawFrame = (ctx, frame, width, height, reveal, drift, label, labelOffset, time) => {
+const drawComposerBox = (ctx, width, height, elapsed) => {
+  const appear = smoothstep(COMPOSER_BOX_START, COMPOSER_BOX_START + 0.45, elapsed);
+  const exit = smoothstep(COMPOSER_BOX_END - 0.55, COMPOSER_BOX_END, elapsed);
+  const alpha = appear * (1 - exit);
+
+  if (alpha <= 0) return;
+
+  const boxWidth = Math.min(width * 0.58, 560);
+  const boxHeight = Math.min(height * 0.34, 190);
+  const scale = lerp(0.96, 1, appear) * lerp(1, 0.96, exit);
+  const x = width / 2 - (boxWidth * scale) / 2;
+  const y = height / 2 - (boxHeight * scale) / 2;
+  const w = boxWidth * scale;
+  const h = boxHeight * scale;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.94)';
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+  ctx.lineWidth = 1.2;
+  ctx.strokeRect(x, y, w, h);
+  ctx.fillStyle = 'rgba(18, 20, 28, 0.25)';
+  ctx.fillRect(x + 18 * scale, y + 20 * scale, w - 36 * scale, 1);
+  ctx.restore();
+};
+
+const drawCenteredText = (ctx, width, height, lines, alpha) => {
+  if (alpha <= 0) return;
+
+  const fontSize = Math.round(Math.max(22, Math.min(40, width * 0.029)));
+  const lineHeight = Math.round(fontSize * 1.35);
+  const startY = Math.round(height * 0.5 - ((lines.length - 1) * lineHeight) / 2);
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.filter = 'none';
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.font = `400 ${fontSize}px Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#ffffff';
+  lines.forEach((line, index) => {
+    ctx.fillText(line, Math.round(width / 2), startY + index * lineHeight);
+  });
+  ctx.restore();
+};
+
+const drawAsciiCodeField = (ctx, width, height, elapsed, alpha) => {
+  if (alpha <= 0) return;
+
+  const cell = Math.max(7, Math.min(10, width / 170));
+  const lineHeight = cell * 2.35;
+  const cols = Math.ceil(width / cell);
+  const rows = Math.ceil(height / lineHeight);
+  const phase = elapsed * 1.4;
+  const codeBands = [
+    { x: 0.02, y: 0.03, w: 0.28, h: 0.28, seed: 1.2 },
+    { x: 0.45, y: 0.02, w: 0.47, h: 0.25, seed: 3.7 },
+    { x: 0.73, y: 0.42, w: 0.27, h: 0.22, seed: 5.4 },
+    { x: 0.0, y: 0.78, w: 0.4, h: 0.2, seed: 7.1 },
+    { x: 0.53, y: 0.66, w: 0.4, h: 0.28, seed: 9.6 },
+    { x: 0.23, y: 0.61, w: 0.13, h: 0.17, seed: 11.3 },
+  ];
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.font = `${cell}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.82)';
+  ctx.shadowBlur = 0;
+
+  codeBands.forEach((band) => {
+    const startCol = Math.floor((band.x * width) / cell);
+    const endCol = Math.min(cols, Math.ceil(((band.x + band.w) * width) / cell));
+    const startRow = Math.floor((band.y * height) / lineHeight);
+    const endRow = Math.min(rows, Math.ceil(((band.y + band.h) * height) / lineHeight));
+    const rowOffset = Math.floor(phase + band.seed) % 4;
+
+    for (let row = startRow; row < endRow; row += 1) {
+      if ((row + rowOffset) % 3 === 1) continue;
+
+      const rowNoise = hash(row, band.seed);
+      const rowStart = startCol + Math.floor(rowNoise * 12);
+      const rowEnd = endCol - Math.floor(hash(row + 17, band.seed) * 14);
+
+      for (let col = rowStart; col < rowEnd; col += 1) {
+        const gate = hash(col + Math.floor(phase * 2), row + band.seed);
+        const pulse = Math.sin(phase + col * 0.17 + row * 0.41 + band.seed) * 0.5 + 0.5;
+
+        if (gate < 0.18 || pulse < 0.18) continue;
+
+        ctx.globalAlpha = alpha * (0.34 + pulse * 0.58);
+        ctx.fillText('.', col * cell + cell / 2, row * lineHeight + lineHeight / 2);
+      }
+    }
+  });
+
+  ctx.restore();
+};
+
+const drawCloudOnlyTimeline = (ctx, width, height, elapsed) => {
+  drawComposerBox(ctx, width, height, elapsed);
+
+  const runningAlpha =
+    smoothstep(RUNNING_TEXT_START, RUNNING_TEXT_START + 0.55, elapsed) *
+    (1 - smoothstep(RUNNING_TEXT_END - 0.45, RUNNING_TEXT_END, elapsed));
+  drawAsciiCodeField(ctx, width, height, elapsed, runningAlpha);
+  drawCenteredText(ctx, width, height, ['Agents running...'], runningAlpha);
+
+  const finishedAlpha =
+    smoothstep(FINISHED_TEXT_START, FINISHED_TEXT_START + 0.55, elapsed) *
+    (1 - smoothstep(FINISHED_TEXT_END - 0.65, FINISHED_TEXT_END, elapsed));
+  drawCenteredText(ctx, width, height, ['Task finished', 'Your code is ready for preview'], finishedAlpha);
+};
+
+const drawFrame = (ctx, frame, width, height, reveal, drift, label, labelOffset, time, elapsed) => {
   if (reveal <= 0) return;
 
   const x = (frame.x + drift.x) * width;
@@ -481,7 +649,8 @@ const drawFrame = (ctx, frame, width, height, reveal, drift, label, labelOffset,
   const w = frame.w * width;
   const h = frame.h * height;
   const alpha = smoothstep(0.04, 1, reveal);
-  const accentScale = lerp(0.82, 1, alpha);
+  const internalShrink = smoothstep(13.25, AGENTS_START, elapsed);
+  const accentScale = lerp(lerp(0.82, 1, alpha), 0.62, internalShrink);
   const hudScale = lerp(1.12, 1, alpha);
   const centerX = x + w / 2;
   const centerY = y + h / 2;
@@ -521,7 +690,7 @@ const drawFrame = (ctx, frame, width, height, reveal, drift, label, labelOffset,
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.78)';
   ctx.lineWidth = Math.max(1.2, width / 1000);
   ctx.shadowColor = 'rgba(255, 255, 255, 0.48)';
-  ctx.shadowBlur = 5;
+  ctx.shadowBlur = 0;
 
   const drawCorner = (sx, sy, mx, my) => {
     ctx.beginPath();
@@ -558,7 +727,7 @@ const drawNode = (ctx, point, radius, reveal, filled = false) => {
   ctx.save();
   ctx.globalAlpha = smoothstep(0, 1, reveal);
   ctx.shadowColor = 'rgba(255, 255, 255, 0.75)';
-  ctx.shadowBlur = filled ? 8 : 6;
+  ctx.shadowBlur = 0;
 
   ctx.beginPath();
   ctx.arc(point.x, point.y, radius + 4, 0, Math.PI * 2);
@@ -612,7 +781,7 @@ const getNodeReveal = (cluster, clusterIndex, nodeIndex, elapsed) => {
 
 const getLocalLineReveal = (cluster, clusterIndex, nodeIndex, elapsed) => {
   const order = getNodeOrder(cluster, nodeIndex);
-  const delay = 8.1 + clusterIndex * 0.36 + order * 0.18;
+  const delay = 5.75 + clusterIndex * 0.36 + order * 0.18;
   return smoothstep(delay, delay + 0.58, elapsed);
 };
 
@@ -630,7 +799,7 @@ const getClusterPoints = (width, height, time) =>
     }),
   );
 
-const drawHud = (ctx, width, height, time, elapsed) => {
+const drawHud = (ctx, width, height, time, elapsed, isInitialCycle) => {
   const pointsByCluster = getClusterPoints(width, height, time);
 
   ctx.save();
@@ -658,7 +827,7 @@ const drawHud = (ctx, width, height, time, elapsed) => {
   longLinks.forEach((link, linkIndex) => {
     const start = pointsByCluster[link.from[0]][link.from[1]];
     const end = pointsByCluster[link.to[0]][link.to[1]];
-    const delay = 9.15 + linkIndex * 0.22 + link.delay;
+    const delay = 6.8 + linkIndex * 0.22 + link.delay;
     const progress = smoothstep(delay, delay + 0.82, elapsed);
     if (progress <= 0) return;
 
@@ -670,19 +839,19 @@ const drawHud = (ctx, width, height, time, elapsed) => {
 
   clusters.forEach((cluster) => {
     const drift = getFrameDrift(cluster, time);
-    const frameReveal = smoothstep(11.7, 13.0, elapsed);
-    drawFrame(ctx, cluster.frame, width, height, frameReveal, drift, cluster.label, cluster.labelOffset, time);
+    const frameReveal = smoothstep(9.35, 10.65, elapsed);
+    drawFrame(ctx, cluster.frame, width, height, frameReveal, drift, cluster.label, cluster.labelOffset, time, elapsed);
   });
 
   pointsByCluster.forEach((clusterPoints, clusterIndex) => {
     clusterPoints.forEach((point, nodeIndex) => {
-      const reveal = getNodeReveal(clusters[clusterIndex], clusterIndex, nodeIndex, elapsed);
+      const reveal = isInitialCycle ? 1 : getNodeReveal(clusters[clusterIndex], clusterIndex, nodeIndex, elapsed);
       drawNode(ctx, point, point.r, reveal, point.filled);
     });
   });
 
   strayNodes.forEach((node, index) => {
-    const reveal = smoothstep(2.4 + index * 0.48, 3.35 + index * 0.48, elapsed) * 0.65;
+    const reveal = isInitialCycle ? 0.65 : smoothstep(2.4 + index * 0.48, 3.35 + index * 0.48, elapsed) * 0.65;
     if (reveal <= 0) return;
 
     const p = {
@@ -695,13 +864,22 @@ const drawHud = (ctx, width, height, time, elapsed) => {
   drawInstallCommand(ctx, width, height, elapsed, time);
 };
 
-export const drawHeroVisualFrame = ({ ctx, buffer, width, height, elapsed, phase, reducedMotion }) => {
+export const drawHeroVisualFrame = ({ ctx, buffer, width, height, elapsed, backgroundElapsed, isInitialCycle, phase, reducedMotion }) => {
   const time = reducedMotion ? 0.6 : elapsed;
+  const backgroundTime = reducedMotion ? 0.6 : 0.6 + backgroundElapsed;
+  const zoom = elapsed >= CLOUD_ONLY_START ? getZoomScale(elapsed) : 1;
 
   ctx.clearRect(0, 0, width, height);
-  drawBackgroundScene(ctx, buffer, width, height, time, reducedMotion);
+  drawBackgroundSceneView(ctx, buffer, width, height, backgroundTime, reducedMotion, zoom);
 
-  if (phase === 'clouds' || elapsed < 1.05) return;
+  if (phase === 'clouds') return;
 
-  drawHud(ctx, width, height, time, elapsed);
+  if (elapsed >= AGENTS_START) {
+    drawCloudOnlyTimeline(ctx, width, height, elapsed);
+    return;
+  }
+
+  if (!isInitialCycle && elapsed < 1.05) return;
+
+  drawHud(ctx, width, height, time, elapsed, isInitialCycle);
 };
