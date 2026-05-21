@@ -1,8 +1,59 @@
 import './Hero.css';
 import HeroVisual from './HeroVisual/HeroVisual';
-import { downloadUrl, getActionLinkProps, githubUrl } from '../../config/actionLinks';
+import { downloadUrl, downloadLinks, getActionLinkProps, githubUrl } from '../../config/actionLinks';
+import { useDetectOS } from '../../hooks/useDetectOS';
 
 const Hero = () => {
+  const { os, isMobile } = useDetectOS();
+
+  const getHeroButtonProps = () => {
+    if (isMobile) {
+      return {
+        href: '#download',
+        label: 'View Versions',
+        icon: (
+          <svg className="mac-icon-hero" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: '14px', height: '14px' }}>
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <polyline points="19 12 12 19 5 12"></polyline>
+          </svg>
+        )
+      };
+    }
+
+    switch (os) {
+      case 'mac':
+        return {
+          href: downloadLinks.mac.universal || '#download',
+          label: 'Download for Mac',
+          icon: <img src="/mac.png" alt="macOS" className="mac-icon-hero" />
+        };
+      case 'windows':
+        return {
+          href: downloadLinks.windows.x64 || '#download',
+          label: 'Download for Windows',
+          icon: (
+            <svg className="mac-icon-hero" viewBox="0 0 24 24" fill="currentColor" style={{ width: '14px', height: '14px' }}>
+              <path d="M0 3.449L9.75 2.1v9.451H0m11.25-9.658L24 0v11.549H11.25M0 12.451h9.75V21.9L0 20.551m11.25-8.1V24L24 21.899V12.451" />
+            </svg>
+          )
+        };
+      case 'linux':
+        return {
+          href: downloadLinks.linux.debX64 || '#download',
+          label: 'Download for Linux',
+          icon: <img src="/os/linux.png" alt="Linux" className="mac-icon-hero" style={{ width: '14px', height: '14px' }} />
+        };
+      default:
+        return {
+          href: '#download',
+          label: 'Download',
+          icon: null
+        };
+    }
+  };
+
+  const heroProps = getHeroButtonProps();
+
   return (
     <section className="hero-section">
       <div className="hero-content">
@@ -28,9 +79,9 @@ const Hero = () => {
             </svg>
             GitHub
           </a>
-          <a {...getActionLinkProps(downloadUrl)} className="btn-hero-download">
-            <span className="btn-hero-download-text">Download</span>
-            <img src="/mac.png" alt="macOS" className="mac-icon-hero" />
+          <a {...getActionLinkProps(heroProps.href)} className="btn-hero-download">
+            <span className="btn-hero-download-text">{heroProps.label}</span>
+            {heroProps.icon}
           </a>
         </div>
       </div>
@@ -41,3 +92,4 @@ const Hero = () => {
 };
 
 export default Hero;
+

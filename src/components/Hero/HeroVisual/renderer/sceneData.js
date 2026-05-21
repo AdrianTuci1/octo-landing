@@ -72,4 +72,4 @@ export const matterBlobs = [
   { x: 0.885, y: 0.64, rx: 0.12, ry: 0.35, seed: 9.7, strength: 0.84 },
 ];
 
-export const INSTALL_COMMAND = 'brew install --cask octomus';
+export const INSTALL_COMMAND = 'brew install --cask staticlabs/tap/octomus';

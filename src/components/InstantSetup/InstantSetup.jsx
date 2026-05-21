@@ -1,6 +1,16 @@
+import { useState } from 'react';
 import './InstantSetup.css';
 
 const InstantSetup = () => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText('brew install --cask staticlabs/tap/octomus').then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
   return (
     <section className="setup-section">
       <div className="setup-container">
@@ -19,13 +29,19 @@ const InstantSetup = () => {
           <div className="setup-content-bottom">
             <div className="code-box">
               <code className="code-content">
-                brew install --cask octomus
+                brew install --cask staticlabs/tap/octomus
               </code>
-              <button className="copy-button">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
+              <button className="copy-button" onClick={handleCopy} title="Copy to clipboard">
+                {copied ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                )}
               </button>
             </div>
 
