@@ -11,6 +11,11 @@ const getAgentsStage = (elapsed) => {
   return 'hidden';
 };
 
+const SHOW_DEV_TIMELINE = false;
+const MOBILE_WIDE_BREAKPOINT = 640;
+const MOBILE_WIDE_WIDTH = 1040;
+const MOBILE_WIDE_HEIGHT = 520;
+
 const HeroVisual = ({ phase = 'hud' }) => {
   const canvasRef = useRef(null);
   const startRef = useRef(0);
@@ -19,7 +24,21 @@ const HeroVisual = ({ phase = 'hud' }) => {
   const sizeRef = useRef({ width: 0, height: 0 });
   const visibleRef = useRef(true);
   const agentsStageRef = useRef('hidden');
+  const devScrubActiveRef = useRef(false);
+  const devElapsedRef = useRef(0);
+  const wideMobileStyleKeyRef = useRef('');
   const [agentsStage, setAgentsStage] = useState('hidden');
+  const [wideMobileStyle, setWideMobileStyle] = useState(null);
+  const [devScrubActive, setDevScrubActive] = useState(false);
+  const [devElapsed, setDevElapsed] = useState(0);
+
+  useEffect(() => {
+    devScrubActiveRef.current = devScrubActive;
+  }, [devScrubActive]);
+
+  useEffect(() => {
+    devElapsedRef.current = devElapsed;
+  }, [devElapsed]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -47,10 +66,29 @@ const HeroVisual = ({ phase = 'hud' }) => {
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
       const dpr = Math.min(window.devicePixelRatio || 1, 1.75);
-      sizeRef.current = { width: rect.width, height: rect.height };
+      const useWideMobileFrame = rect.width < MOBILE_WIDE_BREAKPOINT;
+      const width = useWideMobileFrame ? MOBILE_WIDE_WIDTH : rect.width;
+      const height = useWideMobileFrame ? MOBILE_WIDE_HEIGHT : rect.height;
+      const scale = useWideMobileFrame ? rect.width / MOBILE_WIDE_WIDTH : 1;
+
+      sizeRef.current = { width, height };
       canvas.width = Math.max(1, Math.floor(rect.width * dpr));
       canvas.height = Math.max(1, Math.floor(rect.height * dpr));
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
+
+      const nextStyleKey = useWideMobileFrame ? `${width}:${height}:${scale.toFixed(4)}` : 'default';
+      if (nextStyleKey !== wideMobileStyleKeyRef.current) {
+        wideMobileStyleKeyRef.current = nextStyleKey;
+        setWideMobileStyle(
+          useWideMobileFrame
+            ? {
+                '--hero-visual-wide-width': `${width}px`,
+                '--hero-visual-wide-height': `${height}px`,
+                '--hero-visual-wide-scale': scale,
+              }
+            : null,
+        );
+      }
     };
 
     const scheduleFrame = () => {
@@ -64,8 +102,9 @@ const HeroVisual = ({ phase = 'hud' }) => {
       if (!startRef.current) startRef.current = now;
 
       const absoluteElapsed = (now - startRef.current) / 1000;
-      const elapsed = absoluteElapsed % HERO_VISUAL_LOOP_DURATION;
-      const isInitialCycle = absoluteElapsed < HERO_VISUAL_LOOP_DURATION;
+      const liveElapsed = absoluteElapsed % HERO_VISUAL_LOOP_DURATION;
+      const elapsed = devScrubActiveRef.current ? devElapsedRef.current : liveElapsed;
+      const isInitialCycle = devScrubActiveRef.current || absoluteElapsed < HERO_VISUAL_LOOP_DURATION;
       const { width, height } = sizeRef.current;
       const nextAgentsStage = getAgentsStage(elapsed);
 
@@ -80,7 +119,7 @@ const HeroVisual = ({ phase = 'hud' }) => {
         width,
         height,
         elapsed,
-        backgroundElapsed: absoluteElapsed,
+        backgroundElapsed: devScrubActiveRef.current ? devElapsedRef.current : absoluteElapsed,
         isInitialCycle,
         phase,
         reducedMotion,
@@ -113,9 +152,34 @@ const HeroVisual = ({ phase = 'hud' }) => {
   return (
     <div className="hero-visual" aria-label="Animated coding network visualization">
       <canvas ref={canvasRef} className="hero-visual__canvas" />
-      <div className={`hero-visual__agents-layer hero-visual__agents-layer--${agentsStage}`}>
+      <div className={`hero-visual__agents-layer hero-visual__agents-layer--${agentsStage}`} style={wideMobileStyle || undefined}>
         <AgentsView selectedRunId={agentsStage === 'selecting' ? '1' : undefined} />
       </div>
+      {SHOW_DEV_TIMELINE && (
+        <div className="hero-visual__dev-timeline" aria-label="Hero visual development timeline">
+          <button
+            type="button"
+            className="hero-visual__dev-toggle"
+            onClick={() => setDevScrubActive((current) => !current)}
+          >
+            {devScrubActive ? 'Scrub' : 'Live'}
+          </button>
+          <input
+            type="range"
+            min="0"
+            max={HERO_VISUAL_LOOP_DURATION}
+            step="0.05"
+            value={devElapsed}
+            onChange={(event) => {
+              setDevScrubActive(true);
+              setDevElapsed(Number(event.target.value));
+            }}
+          />
+          <span className="hero-visual__dev-time">
+            {devElapsed.toFixed(2)}s / {HERO_VISUAL_LOOP_DURATION.toFixed(1)}s
+          </span>
+        </div>
+      )}
     </div>
   );
 };

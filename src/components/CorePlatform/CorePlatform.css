@@ -9,6 +9,9 @@
 
 .core-header {
   width: 100%;
+  max-width: var(--container-width);
+  margin-left: auto;
+  margin-right: auto;
   margin-bottom: 5rem;
 }
 
@@ -201,5 +204,57 @@
 
   .core-title {
     font-size: 2.8rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .core-platform {
+    padding: 6rem 1.25rem;
+  }
+
+  .core-header {
+    margin-bottom: 2.5rem;
+  }
+
+  .core-title {
+    max-width: 100%;
+    font-size: clamp(2rem, 10vw, 2.55rem);
+    line-height: 1.08;
+    letter-spacing: -0.8px;
+  }
+
+  .core-grid {
+    gap: 1.25rem;
+  }
+
+  .core-card {
+    aspect-ratio: 1 / 1;
+    min-height: 0;
+    padding: clamp(1rem, 5vw, 1.5rem);
+  }
+
+  .tech-grid {
+    gap: clamp(1rem, 5vw, 1.75rem);
+  }
+
+  .tech-row {
+    gap: clamp(0.75rem, 4vw, 1.25rem);
+  }
+
+  .tech-icon-placeholder {
+    width: clamp(54px, 16.5vw, 68px);
+    height: clamp(54px, 16.5vw, 68px);
+  }
+
+  .tech-icon {
+    width: clamp(28px, 8.5vw, 34px);
+    height: clamp(28px, 8.5vw, 34px);
+  }
+
+  .dashboard-placeholder {
+    bottom: -7%;
+    right: -9%;
+    width: 104%;
+    height: 104%;
   }
 }

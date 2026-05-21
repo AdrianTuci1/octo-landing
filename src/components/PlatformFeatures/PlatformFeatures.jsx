@@ -80,7 +80,7 @@ const PlatformFeatures = () => {
         <div 
           className="carousel-track" 
           style={{ 
-            transform: `translateX(calc(-${activeIndex} * ((var(--container-width) - 5rem - 4rem) / 3 + 2rem)))` 
+            transform: `translateX(calc(-${activeIndex} * (var(--feature-card-width) + var(--feature-card-gap))))` 
           }}
         >
           {features.map((feature, index) => (
@@ -106,5 +106,4 @@ const PlatformFeatures = () => {
 };
 
 export default PlatformFeatures;
-
 

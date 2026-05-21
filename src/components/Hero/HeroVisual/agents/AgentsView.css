@@ -10,7 +10,7 @@
   width: 100%;
   height: 100%;
   border: 1px solid rgba(255, 255, 255, 0.72);
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .agents-header {
@@ -175,16 +175,22 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .run-card {
   display: flex;
+  width: 100%;
   gap: 12px;
   padding: 14px 16px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   transition: all 0.15s ease;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .run-card:hover {
@@ -193,25 +199,23 @@
 }
 
 .run-card-selected {
-  background: #ffffff;
-  color: #000000;
-  border-color: #ffffff;
+  background: #050507;
+  color: #ffffff;
+  border-color: #050507;
   transform: scale(0.992);
 }
 
 .run-card-selected .run-card-title,
 .run-card-selected .run-card-metadata,
-.run-card-selected .run-card-time {
-  color: #000000;
-}
-
-.run-card-selected .run-artifact {
-  color: #2563eb;
+.run-card-selected .run-card-time,
+.run-card-selected .run-card-metadata span,
+.run-card-selected .run-card-metadata svg {
+  color: #ffffff;
 }
 
 .run-card-selected .run-user-avatar {
-  background: #000000;
-  color: #ffffff;
+  background: #ffffff;
+  color: #050507;
 }
 
 .run-card-icon {
@@ -227,15 +231,37 @@
 }
 
 .status-icon-running-wrapper {
-  color: #d946ef;
-  /* Fuchsia/Purple */
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.status-icon-running-wrapper img,
+.agents-menu-loading-icon img {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.agents-menu-loading-icon {
+  display: inline-flex;
+  width: 13px;
+  height: 13px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.agents-menu-loading-icon img {
+  width: 13px;
+  height: 13px;
 }
 
 .run-card-content {
   flex: 1;
+  min-width: 0;
 }
 
 .run-card-top {
@@ -249,21 +275,16 @@
   font-size: 14px;
   font-weight: 500;
   color: #111827;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .run-card-right {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-.run-artifact {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: #a3e635;
-  font-size: 12px;
-  white-space: nowrap;
 }
 
 .run-card-time {
@@ -287,6 +308,7 @@
 .run-card-metadata {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   font-size: 13px;
   color: #6b7280;
@@ -297,4 +319,119 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
+}
+
+@media (max-width: 760px) {
+  .agents-view {
+    padding: 16px;
+  }
+
+  .agents-header {
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .agents-title {
+    font-size: 20px;
+  }
+
+  .agents-subtitle {
+    font-size: 12px;
+  }
+
+  .agents-header-actions {
+    flex-shrink: 0;
+  }
+
+  .agents-btn-secondary,
+  .agents-btn-primary {
+    padding: 5px 9px;
+    font-size: 12px;
+  }
+
+  .agents-filters-bar {
+    align-items: stretch;
+    flex-direction: column;
+    margin-bottom: 14px;
+  }
+
+  .agents-filters-group {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .agents-filters-group::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-item {
+    flex: 0 0 auto;
+    font-size: 12px;
+    padding: 5px 8px;
+  }
+
+  .agents-search-wrapper {
+    width: 100%;
+  }
+
+  .run-card {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .run-card-top {
+    gap: 8px;
+  }
+
+  .run-card-title {
+    font-size: 13px;
+  }
+
+  .run-card-time {
+    font-size: 12px;
+  }
+
+  .run-card-metadata {
+    gap: 8px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 520px) {
+  .agents-view {
+    padding: 14px 12px;
+  }
+
+  .agents-header-actions {
+    display: none;
+  }
+
+  .agents-subtitle {
+    display: none;
+  }
+
+  .agents-filters-group .filter-item:nth-child(n + 3) {
+    display: none;
+  }
+
+  .run-card {
+    padding: 11px 10px;
+  }
+
+  .run-card-right {
+    gap: 7px;
+  }
+
+  .run-user-avatar {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+  }
+
+  .run-card-metadata span:last-child {
+    display: none;
+  }
 }

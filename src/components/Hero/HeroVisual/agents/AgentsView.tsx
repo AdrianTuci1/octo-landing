@@ -1,5 +1,39 @@
+import { useEffect, useState } from 'react';
 import './AgentsView.css';
-import { ChevronDown, Search, CheckCircle2, Circle, Moon, GitBranch, Sparkles } from 'lucide-react';
+import { ChevronDown, Search, CheckCircle2, Circle, GitBranch } from 'lucide-react';
+import loadingAgent01 from '../../../../assets/svg/loading-agents-01.svg';
+import loadingAgent02 from '../../../../assets/svg/loading-agents-02.svg';
+import loadingAgent03 from '../../../../assets/svg/loading-agents-03.svg';
+import loadingAgent04 from '../../../../assets/svg/loading-agents-04.svg';
+import loadingAgent05 from '../../../../assets/svg/loading-agents-05.svg';
+import loadingAgent06 from '../../../../assets/svg/loading-agents-06.svg';
+import loadingAgent07 from '../../../../assets/svg/loading-agents-07.svg';
+import loadingAgent08 from '../../../../assets/svg/loading-agents-08.svg';
+
+const loadingAgentFrames = [
+  loadingAgent01,
+  loadingAgent02,
+  loadingAgent03,
+  loadingAgent04,
+  loadingAgent05,
+  loadingAgent06,
+  loadingAgent07,
+  loadingAgent08,
+];
+
+function LoadingAgentIcon() {
+  const [frame, setFrame] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setFrame((current) => (current + 1) % loadingAgentFrames.length);
+    }, 160);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return <img src={loadingAgentFrames[frame]} alt="" />;
+}
 
 type Run = {
   id: string;
@@ -10,7 +44,6 @@ type Run = {
   status: 'completed' | 'running' | 'idle';
   userInitials: string;
   environment: string;
-  artifact: string;
 };
 
 const mockRuns: Run[] = [
@@ -22,8 +55,7 @@ const mockRuns: Run[] = [
     credits: 1.2,
     status: 'running',
     userInitials: 'A',
-    environment: 'octomus/main',
-    artifact: 'Preview'
+    environment: 'octomus/main'
   },
   {
     id: '2',
@@ -33,8 +65,7 @@ const mockRuns: Run[] = [
     credits: 3.8,
     status: 'completed',
     userInitials: 'M',
-    environment: 'web/app-shell',
-    artifact: 'PR draft'
+    environment: 'web/app-shell'
   },
   {
     id: '3',
@@ -44,8 +75,7 @@ const mockRuns: Run[] = [
     credits: 2.4,
     status: 'completed',
     userInitials: 'R',
-    environment: 'ci/playwright',
-    artifact: 'Trace'
+    environment: 'ci/playwright'
   },
   {
     id: '4',
@@ -55,8 +85,7 @@ const mockRuns: Run[] = [
     credits: 5.1,
     status: 'completed',
     userInitials: 'N',
-    environment: 'api/postgres',
-    artifact: 'Patch'
+    environment: 'api/postgres'
   },
   {
     id: '5',
@@ -66,8 +95,7 @@ const mockRuns: Run[] = [
     credits: 0.8,
     status: 'idle',
     userInitials: 'L',
-    environment: 'docs',
-    artifact: 'Draft'
+    environment: 'docs'
   }
 ];
 
@@ -77,6 +105,12 @@ type AgentsViewProps = {
 };
 
 export function AgentsView({ activeMenu = false, selectedRunId }: AgentsViewProps) {
+  const [selectedId, setSelectedId] = useState<string | undefined>(selectedRunId);
+
+  useEffect(() => {
+    setSelectedId(selectedRunId);
+  }, [selectedRunId]);
+
   return (
     <div className="agents-view" aria-hidden="true">
       <header className="agents-header">
@@ -98,7 +132,7 @@ export function AgentsView({ activeMenu = false, selectedRunId }: AgentsViewProp
             {activeMenu && (
               <div className="agents-menu-popover">
                 <button><CheckCircle2 size={13} /> Completed</button>
-                <button><Moon size={13} /> Running</button>
+                <button><span className="agents-menu-loading-icon"><LoadingAgentIcon /></span> Running</button>
                 <button><Circle size={13} /> Idle</button>
               </div>
             )}
@@ -109,10 +143,6 @@ export function AgentsView({ activeMenu = false, selectedRunId }: AgentsViewProp
           </div>
           <div className="filter-item">
             <span>Created on: All</span>
-            <ChevronDown size={14} />
-          </div>
-          <div className="filter-item">
-            <span>Has artifact: All</span>
             <ChevronDown size={14} />
           </div>
           <div className="filter-item">
@@ -128,7 +158,12 @@ export function AgentsView({ activeMenu = false, selectedRunId }: AgentsViewProp
 
       <div className="agents-runs-list">
         {mockRuns.map((run) => (
-          <div key={run.id} className={`run-card ${selectedRunId === run.id ? 'run-card-selected' : ''}`}>
+          <button
+            key={run.id}
+            type="button"
+            className={`run-card ${selectedId === run.id ? 'run-card-selected' : ''}`}
+            onClick={() => setSelectedId(run.id)}
+          >
             <div className="run-card-icon">
               {run.status === 'completed' ? (
                 <div className="status-icon-completed-wrapper">
@@ -136,7 +171,7 @@ export function AgentsView({ activeMenu = false, selectedRunId }: AgentsViewProp
                 </div>
               ) : run.status === 'running' ? (
                 <div className="status-icon-running-wrapper">
-                  <Moon size={14} fill="currentColor" />
+                  <LoadingAgentIcon />
                 </div>
               ) : (
                 <Circle size={16} className="status-icon-idle" />
@@ -147,7 +182,6 @@ export function AgentsView({ activeMenu = false, selectedRunId }: AgentsViewProp
               <div className="run-card-top">
                 <span className="run-card-title">{run.title}</span>
                 <div className="run-card-right">
-                  <span className="run-artifact"><Sparkles size={12} /> {run.artifact}</span>
                   <span className="run-card-time">{run.timeLabel}</span>
                   <div className="run-user-avatar">{run.userInitials}</div>
                 </div>
@@ -158,7 +192,7 @@ export function AgentsView({ activeMenu = false, selectedRunId }: AgentsViewProp
                 <span>Credits used: {run.credits} credits</span>
               </div>
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </div>

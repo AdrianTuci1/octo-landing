@@ -7,20 +7,14 @@ const ChatCard = () => {
       <div className="chat-card">
         <div className="badge-top">
           <div className="chat-header-icons">
-            <div className="header-icon" style={{color: '#f06529'}}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2l2.4 7.4h7.6l-6.2 4.5 2.4 7.4-6.2-4.5-6.2 4.5 2.4-7.4-6.2-4.5h7.6z" />
-              </svg>
+            <div className="header-icon">
+              <img src="/llms/claude.png" alt="Claude" className="chat-llm-logo" />
             </div>
-            <div className="header-icon" style={{background: '#000', color: '#fff'}}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-              </svg>
+            <div className="header-icon">
+              <img src="/llms/openai.png" alt="OpenAI" className="chat-llm-logo" />
             </div>
-            <div className="header-icon" style={{color: '#4285f4'}}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" />
-              </svg>
+            <div className="header-icon">
+              <img src="/llms/image.png" alt="Gemini" className="chat-llm-logo" />
             </div>
           </div>
         </div>

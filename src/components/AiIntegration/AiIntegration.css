@@ -123,3 +123,46 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 640px) {
+  .ai-section {
+    padding: 6rem 1.25rem;
+  }
+
+  .ai-header-wrapper {
+    margin-bottom: 2.75rem;
+  }
+
+  .ai-top-label {
+    margin-bottom: 1.35rem;
+  }
+
+  .ai-title {
+    font-size: clamp(2rem, 9vw, 2.45rem);
+    line-height: 1.1;
+    letter-spacing: -0.7px;
+  }
+
+  .ai-cards-grid {
+    gap: 1.25rem;
+  }
+
+  .ai-card-info {
+    padding: 1.35rem 1.15rem;
+    gap: 0.65rem;
+    min-height: 118px;
+  }
+
+  .ai-card-title {
+    font-size: 1.02rem;
+  }
+
+  .ai-card-text {
+    font-size: 0.88rem;
+    line-height: 1.45;
+  }
+
+  .ai-card-visual {
+    min-height: 300px;
+  }
+}

@@ -17,16 +17,19 @@ const GpuProfiling = () => {
           </h2>
           <div className="gpu-description-box">
             <p className="gpu-text">
-              Octomus gives you Spotlight-style search, intelligent command suggestions, and an easy switch into agent mode when you want the task handled for you. <a href="#learn" style={{color: 'var(--text-primary)', textDecoration: 'none'}}>Learn more →</a>
+              Octomus gives you Spotlight-style search, intelligent command suggestions, and an easy switch into agent mode when you want the task handled for you.
             </p>
             <div className="gpu-logos">
               <div className="gpu-logo-item">
+                <span className="gpu-square commands"></span>
                 <span>Commands</span>
               </div>
               <div className="gpu-logo-item">
+                <span className="gpu-square autocomplete"></span>
                 <span>Autocomplete</span>
               </div>
               <div className="gpu-logo-item">
+                <span className="gpu-square agents"></span>
                 <span>Agents</span>
               </div>
             </div>
@@ -34,20 +37,11 @@ const GpuProfiling = () => {
         </div>
 
         <div className="gpu-dashboard-placeholder">
-          <div className="dashboard-nav">
-            <div className="dash-nav-item">Launcher</div>
-            <div className="dash-nav-item">Autocomplete</div>
-            <div className="dash-nav-item active">Agent Mode</div>
-            <div className="dash-nav-item">Editor</div>
-          </div>
-          <div className="dashboard-main">
-            <div className="chart-placeholder">
-              <div className="chart-line" style={{height: '40%'}}></div>
-            </div>
-            <div className="chart-placeholder">
-              <div className="chart-line" style={{height: '30%', borderTopColor: '#10b981'}}></div>
-            </div>
-          </div>
+          <img
+            src="/misc/second.png"
+            alt="Spotlight Launcher"
+            className="gpu-dashboard-img"
+          />
         </div>
       </div>
     </section>

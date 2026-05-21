@@ -43,7 +43,8 @@
   letter-spacing: -1px;
   max-width: 600px;
   color: var(--text-primary);
-  text-align: left; /* Left aligned on padding line */
+  text-align: left;
+  /* Left aligned on padding line */
 }
 
 .gpu-description-box {
@@ -76,76 +77,63 @@
   opacity: 0.8;
 }
 
+.gpu-square {
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+.gpu-square.commands {
+  background-color: #3b82f6;
+}
+
+.gpu-square.autocomplete {
+  background-color: #10b981;
+}
+
+.gpu-square.agents {
+  background-color: #ec4899;
+}
+
 .gpu-dashboard-placeholder {
   width: 100%;
-  height: 500px;
+  aspect-ratio: 2138 / 1012;
   background-color: #111216;
   border: 1px solid var(--border-color);
   position: relative;
   overflow: hidden;
   display: flex;
-  flex-direction: column;
-}
-
-.dashboard-nav {
-  height: 40px;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
   align-items: center;
-  padding: 0 1rem;
-  gap: 1.5rem;
-  background-color: #1a1b20;
+  justify-content: center;
 }
 
-.dash-nav-item {
-  font-size: var(--fs-small);
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.dash-nav-item.active {
-  color: var(--text-primary);
-  position: relative;
-}
-
-.dash-nav-item.active::after {
-  content: '';
-  position: absolute;
-  bottom: -13px;
-  left: 0;
+.gpu-dashboard-img {
   width: 100%;
-  height: 2px;
-  background-color: var(--accent-purple);
-}
-
-.dashboard-main {
-  flex: 1;
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-md);
-}
-
-.chart-placeholder {
-  width: 100%;
-  height: 150px;
-  border-bottom: 1px solid var(--border-color);
-  position: relative;
-}
-
-.chart-line {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 60%;
-  background: linear-gradient(0deg, rgba(139, 92, 246, 0.1) 0%, transparent 100%);
-  border-top: 1px solid var(--accent-purple);
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 @media (max-width: 1024px) {
   .gpu-content-top {
     flex-direction: column;
     gap: 2rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .gpu-container {
+    padding: 6rem 1.25rem;
+  }
+
+  .gpu-content-top {
+    margin-bottom: 3rem;
+  }
+
+  .gpu-dashboard-placeholder {
+    width: min(760px, 190vw);
+    max-width: none;
+    align-self: flex-start;
   }
 }
